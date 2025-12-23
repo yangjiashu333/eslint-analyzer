@@ -1,0 +1,94 @@
+import { createContext, useContext, useState, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import type {
+  ESLintOutput,
+  StatisticsData,
+  FilterState,
+  ViewMode,
+} from '../types/eslint';
+import { calculateStatistics } from '../utils/statistics';
+import { applyFilters, createDefaultFilters } from '../utils/filters';
+
+interface ESLintContextValue {
+  // Data
+  rawData: ESLintOutput | null;
+  filteredData: ESLintOutput | null;
+  statistics: StatisticsData | null;
+
+  // View mode
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+
+  // Filters
+  filters: FilterState;
+  updateFilters: (filters: Partial<FilterState>) => void;
+  clearFilters: () => void;
+
+  // Actions
+  setData: (data: ESLintOutput) => void;
+  clearData: () => void;
+}
+
+const ESLintContext = createContext<ESLintContextValue | undefined>(undefined);
+
+export function ESLintProvider({ children }: { children: ReactNode }) {
+  const [rawData, setRawData] = useState<ESLintOutput | null>(null);
+  const [filters, setFilters] = useState<FilterState>(createDefaultFilters());
+  const [viewMode, setViewMode] = useState<ViewMode>('file');
+
+  // Apply filters to raw data
+  const filteredData = useMemo(() => {
+    if (!rawData) return null;
+    return applyFilters(rawData, filters);
+  }, [rawData, filters]);
+
+  // Calculate statistics from filtered data
+  const statistics = useMemo(() => {
+    if (!filteredData) return null;
+    return calculateStatistics(filteredData);
+  }, [filteredData]);
+
+  const updateFilters = (newFilters: Partial<FilterState>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  const clearFilters = () => {
+    setFilters(createDefaultFilters());
+  };
+
+  const setData = (data: ESLintOutput) => {
+    setRawData(data);
+    // Reset filters when new data is loaded
+    setFilters(createDefaultFilters());
+  };
+
+  const clearData = () => {
+    setRawData(null);
+    setFilters(createDefaultFilters());
+  };
+
+  const value: ESLintContextValue = {
+    rawData,
+    filteredData,
+    statistics,
+    viewMode,
+    setViewMode,
+    filters,
+    updateFilters,
+    clearFilters,
+    setData,
+    clearData,
+  };
+
+  return (
+    <ESLintContext.Provider value={value}>{children}</ESLintContext.Provider>
+  );
+}
+
+export function useESLint() {
+  const context = useContext(ESLintContext);
+  if (context === undefined) {
+    throw new Error('useESLint must be used within an ESLintProvider');
+  }
+  return context;
+}
