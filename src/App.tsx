@@ -22,15 +22,7 @@ function AppContent() {
               patterns
             </p>
           </div>
-
           <FileUpload />
-
-          <div className="mt-12 text-center text-sm text-zinc-500">
-            <p>Generate an ESLint report with:</p>
-            <code className="bg-zinc-800 text-zinc-100 px-3 py-1 rounded mt-2 inline-block">
-              eslint . --format json --output-file eslint-report.json
-            </code>
-          </div>
         </div>
       </div>
     );
