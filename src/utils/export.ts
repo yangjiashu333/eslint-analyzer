@@ -1,4 +1,8 @@
-import type { ESLintOutput, StatisticsData } from '../types/eslint';
+import type {
+  ESLintMetadata,
+  ESLintOutput,
+  StatisticsData,
+} from '../types/eslint';
 
 /**
  * Download a file to the user's computer
@@ -83,6 +87,7 @@ export function exportFileSummaryCSV(
  */
 export function exportRuleSummaryCSV(
   stats: StatisticsData,
+  metadata: ESLintMetadata | null,
   filename = 'eslint-rule-summary.csv'
 ): void {
   const headers = [
@@ -92,14 +97,28 @@ export function exportRuleSummaryCSV(
     'Fixable',
     'Affected Files Count',
   ];
+  if (metadata !== null) {
+    headers.push('Description', 'URL');
+  }
+  const rows = stats.ruleStats.map((rule) => {
+    const ruleMeta = metadata?.rulesMeta?.[rule.ruleId];
+    const description = ruleMeta?.docs?.description ?? '-';
+    const url = ruleMeta?.docs?.url ?? '-';
 
-  const rows = stats.ruleStats.map((rule) => [
-    rule.ruleId,
-    rule.totalCount.toString(),
-    rule.level,
-    rule.fixable ? 'Yes' : 'No',
-    rule.affectedFiles.length.toString(),
-  ]);
+    const baseRow = [
+      rule.ruleId,
+      rule.totalCount.toString(),
+      rule.level,
+      rule.fixable ? 'Yes' : 'No',
+      rule.affectedFiles.length.toString(),
+    ];
+
+    if (metadata !== null) {
+      return [...baseRow, description, url];
+    } else {
+      return baseRow;
+    }
+  });
 
   const csv = generateCSV(headers, rows);
   downloadFile(csv, filename, 'text/csv');

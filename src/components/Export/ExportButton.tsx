@@ -10,7 +10,7 @@ import {
 } from '../../utils/export';
 
 export default function ExportButton() {
-  const { rawData, filteredData, statistics } = useESLint();
+  const { rawData, filteredData, statistics, metadata } = useESLint();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +67,7 @@ export default function ExportButton() {
       label: 'CSV (Rule Summary)',
       description: 'Rule-level statistics',
       onClick: () => {
-        exportRuleSummaryCSV(statistics);
+        exportRuleSummaryCSV(statistics, metadata);
         setIsOpen(false);
       },
     },
