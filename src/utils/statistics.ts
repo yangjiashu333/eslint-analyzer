@@ -1,5 +1,6 @@
 import type {
   ESLintOutput,
+  ESLintMetadata,
   StatisticsData,
   FileStatistic,
   RuleStatistic,
@@ -8,8 +9,14 @@ import type {
 /**
  * Calculate comprehensive statistics from ESLint output
  * Includes both file dimension and rule dimension statistics
+ * @param data - ESLint output array
+ * @param metadata - Optional metadata (from --format json-with-metadata)
+ *                   If provided, rule fixable status will be taken from metadata
  */
-export function calculateStatistics(data: ESLintOutput): StatisticsData {
+export function calculateStatistics(
+  data: ESLintOutput,
+  metadata?: ESLintMetadata | null
+): StatisticsData {
   // Initialize counters
   let totalErrors = 0;
   let totalWarnings = 0;
@@ -35,11 +42,19 @@ export function calculateStatistics(data: ESLintOutput): StatisticsData {
 
       // Update rule statistics
       if (!ruleStatsMap.has(ruleId)) {
+        // Determine fixable status: prioritize metadata if available
+        let isFixable = !!message.fix;
+        if (metadata?.rulesMeta?.[ruleId]) {
+          const metaFixable = metadata.rulesMeta[ruleId].fixable;
+          // metadata.fixable can be boolean or string (e.g., "code", "whitespace")
+          isFixable = !!metaFixable;
+        }
+
         ruleStatsMap.set(ruleId, {
           ruleId,
           totalCount: 0,
-          errorCount: 0,
-          warningCount: 0,
+          level: message.severity === 2 ? 'error' : 'warning',
+          fixable: isFixable,
           affectedFiles: [],
         });
       }
@@ -47,10 +62,14 @@ export function calculateStatistics(data: ESLintOutput): StatisticsData {
       const ruleStat = ruleStatsMap.get(ruleId)!;
       ruleStat.totalCount++;
 
+      // Update level if we encounter an error (error takes priority over warning)
       if (message.severity === 2) {
-        ruleStat.errorCount++;
-      } else {
-        ruleStat.warningCount++;
+        ruleStat.level = 'error';
+      }
+
+      // Update fixable if any message has a fix (only if metadata didn't already define it)
+      if (!metadata?.rulesMeta?.[ruleId] && message.fix) {
+        ruleStat.fixable = true;
       }
 
       // Find or create affected file entry for this rule

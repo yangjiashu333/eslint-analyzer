@@ -1,26 +1,58 @@
-import type { ESLintOutput, ESLintResult } from '../types/eslint';
+import type {
+  ESLintOutput,
+  ESLintResult,
+  ESLintMetadata,
+} from '../types/eslint';
 
 /**
  * Parse and validate ESLint JSON output
+ * Handles both array format and object format with results property
  * @param content - JSON string content
- * @returns Parsed and validated ESLint output
+ * @returns Object containing parsed ESLint output and optional metadata
  * @throws Error if JSON is invalid or doesn't match ESLint format
  */
-export function parseESLintJSON(content: string): ESLintOutput {
+export function parseESLintJSON(content: string): {
+  results: ESLintOutput;
+  metadata?: ESLintMetadata;
+} {
   try {
     const parsed = JSON.parse(content);
 
-    // Validate that it's an array
-    if (!Array.isArray(parsed)) {
-      throw new Error('Invalid ESLint output: expected an array of results');
+    // Handle both array format and object format with results property
+    let results: unknown;
+    let metadata: ESLintMetadata | undefined;
+
+    if (Array.isArray(parsed)) {
+      // Direct array format: [{ filePath, messages, ... }, ...]
+      results = parsed;
+    } else if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'results' in parsed &&
+      Array.isArray(parsed.results)
+    ) {
+      // Object format: { results: [{ filePath, messages, ... }], metadata?: {...} }
+      results = parsed.results;
+
+      // Extract metadata if present (from --format json-with-metadata)
+      if ('metadata' in parsed && typeof parsed.metadata === 'object') {
+        metadata = parsed.metadata as ESLintMetadata;
+      }
+    } else {
+      throw new Error(
+        'Invalid ESLint output: expected an array of results or an object with a "results" property'
+      );
     }
 
     // Validate each result object
-    for (let i = 0; i < parsed.length; i++) {
-      validateESLintResult(parsed[i], i);
+    for (let i = 0; i < (results as unknown[]).length; i++) {
+      validateESLintResult((results as unknown[])[i], i);
     }
 
-    return parsed as ESLintOutput;
+    return {
+      results: results as ESLintOutput,
+      metadata,
+    };
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error('Invalid JSON format: ' + error.message);

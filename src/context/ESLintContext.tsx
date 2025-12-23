@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type {
   ESLintOutput,
+  ESLintMetadata,
   StatisticsData,
   FilterState,
   ViewMode,
@@ -14,6 +15,7 @@ interface ESLintContextValue {
   rawData: ESLintOutput | null;
   filteredData: ESLintOutput | null;
   statistics: StatisticsData | null;
+  metadata: ESLintMetadata | null;
 
   // View mode
   viewMode: ViewMode;
@@ -25,7 +27,7 @@ interface ESLintContextValue {
   clearFilters: () => void;
 
   // Actions
-  setData: (data: ESLintOutput) => void;
+  setData: (data: ESLintOutput, metadata?: ESLintMetadata) => void;
   clearData: () => void;
 }
 
@@ -33,6 +35,7 @@ const ESLintContext = createContext<ESLintContextValue | undefined>(undefined);
 
 export function ESLintProvider({ children }: { children: ReactNode }) {
   const [rawData, setRawData] = useState<ESLintOutput | null>(null);
+  const [metadata, setMetadata] = useState<ESLintMetadata | null>(null);
   const [filters, setFilters] = useState<FilterState>(createDefaultFilters());
   const [viewMode, setViewMode] = useState<ViewMode>('file');
 
@@ -45,8 +48,8 @@ export function ESLintProvider({ children }: { children: ReactNode }) {
   // Calculate statistics from filtered data
   const statistics = useMemo(() => {
     if (!filteredData) return null;
-    return calculateStatistics(filteredData);
-  }, [filteredData]);
+    return calculateStatistics(filteredData, metadata);
+  }, [filteredData, metadata]);
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
@@ -56,14 +59,16 @@ export function ESLintProvider({ children }: { children: ReactNode }) {
     setFilters(createDefaultFilters());
   };
 
-  const setData = (data: ESLintOutput) => {
+  const setData = (data: ESLintOutput, newMetadata?: ESLintMetadata) => {
     setRawData(data);
+    setMetadata(newMetadata || null);
     // Reset filters when new data is loaded
     setFilters(createDefaultFilters());
   };
 
   const clearData = () => {
     setRawData(null);
+    setMetadata(null);
     setFilters(createDefaultFilters());
   };
 
@@ -71,6 +76,7 @@ export function ESLintProvider({ children }: { children: ReactNode }) {
     rawData,
     filteredData,
     statistics,
+    metadata,
     viewMode,
     setViewMode,
     filters,

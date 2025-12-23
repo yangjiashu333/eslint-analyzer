@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import type { RuleStatistic } from '../../types/eslint';
+import type { RuleStatistic, ESLintMetadata } from '../../types/eslint';
 
 interface RuleTableProps {
   ruleStats: RuleStatistic[];
+  metadata: ESLintMetadata | null;
 }
 
-export default function RuleTable({ ruleStats }: RuleTableProps) {
+export default function RuleTable({ ruleStats, metadata }: RuleTableProps) {
   const [expandedRules, setExpandedRules] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<'total' | 'errors' | 'warnings'>(
-    'total'
-  );
+  const [sortBy, setSortBy] = useState<'total' | 'level' | 'fixable'>('total');
+
+  // Helper function to get rule metadata
+  const getRuleMeta = (ruleId: string) => {
+    return metadata?.rulesMeta?.[ruleId];
+  };
 
   const toggleRule = (ruleId: string) => {
     setExpandedRules((prev) => {
@@ -26,10 +30,14 @@ export default function RuleTable({ ruleStats }: RuleTableProps) {
 
   const sortedRules = [...ruleStats].sort((a, b) => {
     switch (sortBy) {
-      case 'errors':
-        return b.errorCount - a.errorCount;
-      case 'warnings':
-        return b.warningCount - a.warningCount;
+      case 'level':
+        // Sort errors before warnings
+        if (a.level === b.level) return b.totalCount - a.totalCount;
+        return a.level === 'error' ? -1 : 1;
+      case 'fixable':
+        // Sort fixable before non-fixable
+        if (a.fixable === b.fixable) return b.totalCount - a.totalCount;
+        return a.fixable ? -1 : 1;
       default:
         return b.totalCount - a.totalCount;
     }
@@ -55,6 +63,9 @@ export default function RuleTable({ ruleStats }: RuleTableProps) {
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                 Rule ID
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                Description
+              </th>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-zinc-700"
                 onClick={() => setSortBy('total')}
@@ -63,15 +74,15 @@ export default function RuleTable({ ruleStats }: RuleTableProps) {
               </th>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-zinc-700"
-                onClick={() => setSortBy('errors')}
+                onClick={() => setSortBy('level')}
               >
-                Errors {sortBy === 'errors' && '↓'}
+                Level {sortBy === 'level' && '↓'}
               </th>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-zinc-700"
-                onClick={() => setSortBy('warnings')}
+                onClick={() => setSortBy('fixable')}
               >
-                Warnings {sortBy === 'warnings' && '↓'}
+                Fixable {sortBy === 'fixable' && '↓'}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                 Affected Files
@@ -81,6 +92,10 @@ export default function RuleTable({ ruleStats }: RuleTableProps) {
           <tbody className="bg-white divide-y divide-zinc-200">
             {sortedRules.map((rule) => {
               const isExpanded = expandedRules.has(rule.ruleId);
+              const ruleMeta = getRuleMeta(rule.ruleId);
+              const description = ruleMeta?.docs?.description;
+              const url = ruleMeta?.docs?.url;
+
               return (
                 <>
                   <tr key={rule.ruleId} className="hover:bg-zinc-50">
@@ -102,18 +117,48 @@ export default function RuleTable({ ruleStats }: RuleTableProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4">
+                      {description && url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                        >
+                          {description}
+                        </a>
+                      ) : description ? (
+                        <span className="text-sm text-zinc-700">
+                          {description}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-zinc-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
                       <span className="text-sm font-semibold text-zinc-900">
                         {rule.totalCount}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        {rule.errorCount}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          rule.level === 'error'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {rule.level}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        {rule.warningCount}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          rule.fixable
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-zinc-100 text-zinc-600'
+                        }`}
+                      >
+                        {rule.fixable ? 'Yes' : 'No'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-zinc-500">
@@ -122,7 +167,7 @@ export default function RuleTable({ ruleStats }: RuleTableProps) {
                   </tr>
                   {isExpanded && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 bg-zinc-50">
+                      <td colSpan={7} className="px-6 py-4 bg-zinc-50">
                         <div className="space-y-2">
                           <h4 className="font-medium text-sm text-zinc-900 mb-3">
                             Affected Files:

@@ -31,10 +31,10 @@ export default function FileUpload() {
 
         // Read and parse file
         const content = await readFileContent(file);
-        const parsedData = parseESLintJSON(content);
+        const { results, metadata } = parseESLintJSON(content);
 
-        // Set data in context
-        setData(parsedData);
+        // Set data and metadata in context
+        setData(results, metadata);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to parse file');
       } finally {
@@ -95,12 +95,20 @@ export default function FileUpload() {
                 </p>
               </div>
 
-              <p className="text-xs text-zinc-400 mt-2">
-                Generate with:{' '}
-                <code className="bg-zinc-100 px-2 py-1 rounded">
-                  eslint --format json
-                </code>
-              </p>
+              <div className="text-xs text-zinc-400 mt-2 space-y-1">
+                <p>
+                  Generate with:{' '}
+                  <code className="bg-zinc-100 px-2 py-1 rounded">
+                    eslint --format json
+                  </code>
+                </p>
+                <p>
+                  Or with metadata:{' '}
+                  <code className="bg-zinc-100 px-2 py-1 rounded">
+                    eslint --format json-with-metadata
+                  </code>
+                </p>
+              </div>
             </>
           )}
         </div>

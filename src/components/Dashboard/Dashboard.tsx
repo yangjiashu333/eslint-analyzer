@@ -7,7 +7,7 @@ import FilterPanel from '../Filters/FilterPanel';
 import ExportButton from '../Export/ExportButton';
 
 export default function Dashboard() {
-  const { statistics, viewMode } = useESLint();
+  const { statistics, viewMode, metadata } = useESLint();
 
   if (!statistics) {
     return null;
@@ -41,7 +41,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold text-zinc-900 mb-4">
               Rules ({statistics.ruleStats.length})
             </h2>
-            <RuleTable ruleStats={statistics.ruleStats} />
+            <RuleTable ruleStats={statistics.ruleStats} metadata={metadata} />
           </div>
         )}
       </div>

@@ -88,16 +88,16 @@ export function exportRuleSummaryCSV(
   const headers = [
     'Rule ID',
     'Total Count',
-    'Error Count',
-    'Warning Count',
+    'Level',
+    'Fixable',
     'Affected Files Count',
   ];
 
   const rows = stats.ruleStats.map((rule) => [
     rule.ruleId,
     rule.totalCount.toString(),
-    rule.errorCount.toString(),
-    rule.warningCount.toString(),
+    rule.level,
+    rule.fixable ? 'Yes' : 'No',
     rule.affectedFiles.length.toString(),
   ]);
 

@@ -45,6 +45,28 @@ export interface ESLintResult {
 
 export type ESLintOutput = ESLintResult[];
 
+// ESLint metadata types (from --format json-with-metadata)
+export interface ESLintRuleMetaDoc {
+  description?: string;
+  url?: string;
+  category?: string;
+  recommended?: boolean;
+}
+
+export interface ESLintRuleMeta {
+  type?: string;
+  docs?: ESLintRuleMetaDoc;
+  fixable?: boolean | string;
+  schema?: unknown[];
+  deprecated?: boolean;
+  replacedBy?: string[];
+}
+
+export interface ESLintMetadata {
+  rulesMeta?: Record<string, ESLintRuleMeta>;
+  cwd?: string;
+}
+
 // Application-specific types for filtering
 export type SeverityFilter = 'all' | 'errors' | 'warnings';
 
@@ -69,8 +91,8 @@ export interface FileStatistic {
 export interface RuleStatistic {
   ruleId: string;
   totalCount: number;
-  errorCount: number; // How many are severity 2
-  warningCount: number; // How many are severity 1
+  level: 'warning' | 'error'; // Severity level of the rule
+  fixable: boolean; // Whether the rule has auto-fix capability
   affectedFiles: Array<{
     filePath: string;
     count: number; // Occurrences in this file
