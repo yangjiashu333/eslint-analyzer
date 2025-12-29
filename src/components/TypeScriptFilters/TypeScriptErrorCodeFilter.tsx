@@ -1,15 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useESLint } from '../../context/ESLintContext';
-import { getAllRuleIds } from '../../utils/filters';
+import { useTypeScript } from '../../context/TypeScriptContext';
+import { getAllErrorCodes } from '../../utils/typescriptFilters';
 
-export default function RuleFilter() {
-  const { rawData, filters, updateFilters } = useESLint();
+export default function TypeScriptErrorCodeFilter() {
+  const { rawData, filters, updateFilters } = useTypeScript();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const allRules = rawData ? getAllRuleIds(rawData) : [];
-  const selectedCount = filters.ruleIds.length;
+  const allErrorCodes = rawData ? getAllErrorCodes(rawData) : [];
+  const selectedCount = filters.errorCodes.length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -25,15 +25,15 @@ export default function RuleFilter() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleRule = (ruleId: string) => {
-    const newRuleIds = filters.ruleIds.includes(ruleId)
-      ? filters.ruleIds.filter((id) => id !== ruleId)
-      : [...filters.ruleIds, ruleId];
-    updateFilters({ ruleIds: newRuleIds });
+  const toggleErrorCode = (errorCode: string) => {
+    const newErrorCodes = filters.errorCodes.includes(errorCode)
+      ? filters.errorCodes.filter((code) => code !== errorCode)
+      : [...filters.errorCodes, errorCode];
+    updateFilters({ errorCodes: newErrorCodes });
   };
 
   const clearAll = () => {
-    updateFilters({ ruleIds: [] });
+    updateFilters({ errorCodes: [] });
   };
 
   return (
@@ -42,7 +42,7 @@ export default function RuleFilter() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-300 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50"
       >
-        <span>Rules {selectedCount > 0 && `(${selectedCount})`}</span>
+        <span>Error Codes {selectedCount > 0 && `(${selectedCount})`}</span>
         <ChevronDown className="w-4 h-4" />
       </button>
 
@@ -50,12 +50,12 @@ export default function RuleFilter() {
         <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 max-h-80 overflow-hidden flex flex-col">
           <div className="p-3 border-b border-zinc-200 flex items-center justify-between">
             <span className="text-sm font-medium text-zinc-900">
-              Select Rules
+              Select Error Codes
             </span>
             {selectedCount > 0 && (
               <button
                 onClick={clearAll}
-                className="text-xs text-blue-600 hover:text-blue-700"
+                className="text-xs text-purple-600 hover:text-purple-700"
               >
                 Clear all
               </button>
@@ -63,25 +63,25 @@ export default function RuleFilter() {
           </div>
 
           <div className="overflow-y-auto flex-1">
-            {allRules.length === 0 ? (
+            {allErrorCodes.length === 0 ? (
               <div className="p-4 text-sm text-zinc-500 text-center">
-                No rules found
+                No error codes found
               </div>
             ) : (
               <div className="p-2">
-                {allRules.map((ruleId) => (
+                {allErrorCodes.map((errorCode) => (
                   <label
-                    key={ruleId}
+                    key={errorCode}
                     className="flex items-center gap-2 px-2 py-2 hover:bg-zinc-50 rounded cursor-pointer"
                   >
                     <input
                       type="checkbox"
-                      checked={filters.ruleIds.includes(ruleId)}
-                      onChange={() => toggleRule(ruleId)}
-                      className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500"
+                      checked={filters.errorCodes.includes(errorCode)}
+                      onChange={() => toggleErrorCode(errorCode)}
+                      className="rounded border-zinc-300 text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-sm text-zinc-700 font-mono">
-                      {ruleId}
+                    <span className="text-sm text-zinc-900 font-mono">
+                      {errorCode}
                     </span>
                   </label>
                 ))}
